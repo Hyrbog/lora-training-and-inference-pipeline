@@ -221,3 +221,32 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# === AI Models, Weights & Checkpoints ===
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.gguf
+*.onnx
+
+# === Local Datasets & Private Media ===
+datasets/
+raw_images/
+output/
+outputs/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+*.psd
+!docs/*.png
+!docs/*.jpg
+
+# === Training Logs & TensorBoard ===
+logs/
+runs/
+wandb/
+events.out.tfevents.*
