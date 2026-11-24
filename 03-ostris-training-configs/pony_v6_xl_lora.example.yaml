@@ -1,0 +1,118 @@
+# ============================================================================
+# Ostris AI-Toolkit Configuration: Pony Diffusion V6 XL (SDXL Architecture)
+# Calibrated for: NVIDIA RTX 4090 (24GB VRAM)
+# Strategy: High-rank LoRA + Conv layers, dual UNet/TE learning rate,
+#           studio white-background dataset, and sampling disabled for speed.
+# ============================================================================
+
+job: extension
+config:
+  name: trigger_PONY
+  process:
+  - type: diffusion_trainer
+    training_folder: ./output
+    sqlite_db_path: ./aitk_db.db
+    device: cuda
+    trigger_word: TRIGGER
+    performance_log_every: 10
+
+    network:
+      type: lora
+      linear: 128
+      linear_alpha: 128
+      conv: 8
+      conv_alpha: 8
+      lokr_full_rank: true
+      lokr_factor: -1
+      network_kwargs:
+        text_encoder_lr: 1.0e-05
+        ignore_if_contains: []
+
+    save:
+      dtype: bf16
+      save_every: 500
+      max_step_saves_to_keep: 4
+      save_format: safetensors
+      push_to_hub: false
+
+    datasets:
+    - folder_path: ./datasets/trigger_PONY
+      mask_path: null
+      mask_min_value: 0.1
+      default_caption: ''
+      caption_ext: txt
+      caption_dropout_rate: 0.05
+      cache_latents_to_disk: true
+      is_reg: false
+      network_weight: 1
+      resolution:
+      - 1024
+      controls: []
+      shrink_video_to_frames: true
+      num_frames: 1
+      flip_x: false
+      flip_y: false
+      num_repeats: 1
+
+    train:
+      batch_size: 2
+      bypass_guidance_embedding: false
+      steps: 4000
+      gradient_accumulation: 1
+      train_unet: true
+      train_text_encoder: true
+      gradient_checkpointing: true
+      noise_scheduler: euler
+      optimizer: adamw8bit
+      content_or_style: content
+      optimizer_params:
+        weight_decay: 0.01
+      unload_text_encoder: false
+      cache_text_embeddings: false
+      lr: 4.0e-05
+      ema_config:
+        use_ema: false
+        ema_decay: 0.99
+      skip_first_sample: true
+      force_first_sample: false
+      disable_sampling: true
+      dtype: bf16
+      diff_output_preservation: false
+      diff_output_preservation_multiplier: 1
+      diff_output_preservation_class: person
+      switch_boundary_every: 20
+      loss_type: mse
+
+    logging:
+      log_every: 1
+      use_ui_logger: true
+
+    model:
+      # Point to your local SDXL / Pony V6 XL checkpoint
+      name_or_path: ./models/checkpoints/cyberrealisticPony_v180_fp32_Coreshift.safetensors
+      quantize: false
+      qtype: qfloat8
+      quantize_te: false
+      qtype_te: qfloat8
+      arch: sdxl
+      low_vram: false
+      model_kwargs: {}
+      compile: false
+
+    sample:
+      sampler: ddpm
+      sample_every: 250
+      width: 1024
+      height: 1024
+      samples: []
+      neg: ''
+      seed: 42
+      walk_seed: true
+      guidance_scale: 6
+      sample_steps: 30
+      num_frames: 1
+      fps: 1
+
+meta:
+  name: trigger_PONY
+  version: '1.0'

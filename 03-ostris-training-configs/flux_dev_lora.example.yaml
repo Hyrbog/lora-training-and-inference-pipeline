@@ -1,0 +1,119 @@
+# ============================================================================
+# Ostris AI-Toolkit Configuration: FLUX.1-dev (FlowMatch Architecture)
+# Calibrated for: NVIDIA RTX 4090 (24GB VRAM)
+# Strategy: Masked subject training (mask_min_value: 0.1), FP8 quantization,
+#           sigmoid timestep sampling, and frozen/cached T5-XXL embeddings.
+# ============================================================================
+
+job: extension
+config:
+  name: TRIGGER_FLUX
+  process:
+  - type: diffusion_trainer
+    training_folder: ./output
+    sqlite_db_path: ./aitk_db.db
+    device: cuda
+    trigger_word: TRIGGER
+    performance_log_every: 10
+
+    network:
+      type: lora
+      linear: 128
+      linear_alpha: 128
+      conv: 16
+      conv_alpha: 16
+      lokr_full_rank: true
+      lokr_factor: -1
+      network_kwargs:
+        ignore_if_contains: []
+
+    save:
+      dtype: bf16
+      save_every: 500
+      max_step_saves_to_keep: 4
+      save_format: safetensors
+      push_to_hub: false
+
+    datasets:
+    - folder_path: ./datasets/trigger_FLUX
+      # Binary masks from Phase 01 keep loss focused on subject (90%)
+      # while preserving natural lighting/context from background (10%)
+      mask_path: ./datasets/trigger_FLUX_masks
+      mask_min_value: 0.1
+      default_caption: ''
+      caption_ext: txt
+      caption_dropout_rate: 0.05
+      cache_latents_to_disk: true
+      is_reg: false
+      network_weight: 1
+      resolution:
+      - 1024
+      controls: []
+      shrink_video_to_frames: true
+      num_frames: 1
+      flip_x: false
+      flip_y: false
+      num_repeats: 1
+
+    train:
+      batch_size: 1
+      bypass_guidance_embedding: false
+      steps: 2000
+      gradient_accumulation: 1
+      train_unet: true
+      train_text_encoder: false
+      gradient_checkpointing: true
+      noise_scheduler: flowmatch
+      optimizer: adamw8bit
+      timestep_type: sigmoid
+      content_or_style: content
+      optimizer_params:
+        weight_decay: 0.01
+      unload_text_encoder: false
+      cache_text_embeddings: true
+      lr: 0.00015
+      ema_config:
+        use_ema: false
+        ema_decay: 0.99
+      skip_first_sample: true
+      force_first_sample: false
+      disable_sampling: true
+      dtype: bf16
+      diff_output_preservation: false
+      diff_output_preservation_multiplier: 1
+      diff_output_preservation_class: person
+      switch_boundary_every: 20
+      loss_type: mse
+
+    logging:
+      log_every: 1
+      use_ui_logger: true
+
+    model:
+      name_or_path: black-forest-labs/FLUX.1-dev
+      quantize: true
+      qtype: qfloat8
+      quantize_te: false
+      qtype_te: qfloat8
+      arch: flux
+      low_vram: true
+      model_kwargs: {}
+      compile: false
+
+    sample:
+      sampler: flowmatch
+      sample_every: 250
+      width: 1024
+      height: 1024
+      samples: []
+      neg: ''
+      seed: 42
+      walk_seed: true
+      guidance_scale: 3.5
+      sample_steps: 28
+      num_frames: 1
+      fps: 1
+
+meta:
+  name: TRIGGER_FLUX
+  version: '1.0'
