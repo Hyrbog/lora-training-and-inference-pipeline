@@ -5,6 +5,8 @@ This final phase integrates trained LoRAs from Phase 03 into a unified, producti
 All launch flags and memory profiles are calibrated for an **NVIDIA RTX 4090 (24GB VRAM)**.
 
 ---
+![Master ComfyUI Multi-Model Workflow](../docs/workflow_overview.png)
+---
 
 ## 1. Environment & Multi-Monitor Workspace Automation (`scripts/`)
 
@@ -25,10 +27,14 @@ Instead of maintaining separate graphs per task, this workflow organizes **22 mo
    * **Sampler Config:** `cyberrealisticPony_v180_fp32_Coreshift.safetensors` (`CLIP Set Last Layer: -2`), `35 steps`, `CFG: 2.5`, `dpmpp_2m_sde` / `karras`, plus 4 LoRA slots.
    * **Initial Identity Lock (`ReActor`):** Loads pre-built `.safetensors` face models (`inswapper_128.onnx` + `retinaface_resnet50`) reinforced by `Face Booster` (`GPEN-BFR-512.onnx` + `CodeFormer`).
 
-2. **Stage 2 — Photorealistic Texture & Identity Refinement (`FLUX.1-dev`):**
-   * **Model & LoRAs:** Passes the Stage 1 render into `flux1CompactClipAND_Flux1DevFP16.safetensors` (`CLIP Last Layer: -1`) with 3 dedicated FLUX LoRA slots.
-   * **Early-Cut IP-Adapter Face:** Uses `ip-adapter-plus_sdxl_vit-h` (`weight: 0.65`, `embeds_scaling: V only`, **`end_at: 0.750`**). Stopping conditioning at 75% locks facial geometry early while leaving the final 25% free for natural skin pores and lighting.
-   * **High-Res Facial Detail Pass (`ADetailer`):** Detects faces via `YOLOv8` + `SAM ViT-H` and refines at native `1024x1024` (`20 steps`, `CFG: 1.0`, `euler` / `normal`, `denoise: 0.30`).
+2. **Stage 2 — Photorealistic Texture & Identity Refinement (`FLUX.1-dev` + `PuLID-Flux`):**
+   * **Model & LoRAs:** Feeds the Stage 1 render into `flux1CompactClipAND_Flux1DevFP16.safetensors` (`CLIP Last Layer: -1`) with 3 dedicated FLUX LoRA slots.
+   * **Full-Frame Facial Conditioning (`PuLID-Flux`):** Replaces square-cropped CLIP Vision adapters with `pulid_flux_v0.9.1.safetensors` + `InsightFace (antelopev2)` + `EVA02-CLIP` (`weight: 0.75–0.85`, `end_at: 0.750`). Accepts full-frame reference portraits without center-cropping while preserving natural skin pores.
+   * **Single-Pass Facial Refinement (`FaceDetailer`):** Uses `FaceDetailer` directly as the FLUX KSampler (`YOLOv8` + `SAM ViT-H` at `1024x1024`, `20 steps`, `CFG: 1.0`, `euler` / `normal`, `denoise: 0.30`), cutting total generation time to **~34 seconds total for both Pony + FLUX renders** on an RTX 4090.
+
+### Compatibility Patch Note (Modern ComfyUI + PuLID-Flux)
+* If ComfyUI throws `TypeError: pulid_forward_orig() got an unexpected keyword argument 'timestep_zero_index'`, open `custom_nodes/ComfyUI-PuLID-Flux/PulidFluxHook.py` and add `timestep_zero_index=None, **kwargs` to the `def pulid_forward_orig(...)` signature.
+
 
 ### Optional Plug-and-Play Support Modules (Bypassed by Default)
 * **ControlNet Suites (`SDXL` & `FLUX`):** Pre-wired Canny, Depth, and OpenPose pipelines with live preprocessor previews (`CONTROLNET - SDXL 02 ADJUST`) ready to toggle on when strict pose locking is required.

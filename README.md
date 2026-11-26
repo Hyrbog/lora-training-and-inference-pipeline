@@ -1,6 +1,8 @@
 \# End-to-End Local AI LoRA Training \& Multi-Model Inference Pipeline
 
 
+![Master ComfyUI Multi-Model Workflow](docs/workflow_overview.png)
+
 
 A production-oriented, modular pipeline for curating datasets, automating dual-architecture captioning, training custom LoRAs (\*\*FLUX.1-dev\*\*, \*\*Pony Diffusion V6 XL\*\*, \*\*Wan 2.1\*\*), and running multi-stage image and video inference locally in \*\*ComfyUI\*\*.
 
