@@ -29,6 +29,7 @@ Instead of maintaining separate graphs per task, this workflow organizes **22 mo
 
 2. **Stage 2 — Photorealistic Texture & Identity Refinement (`FLUX.1-dev` + `PuLID-Flux`):**
    * **Model & LoRAs:** Feeds the Stage 1 render into `flux1CompactClipAND_Flux1DevFP16.safetensors` (`CLIP Last Layer: -1`) with 3 dedicated FLUX LoRA slots.
+   * **Full-Frame SDXL IP-Adapter (`IP-ADAPTER PONY`):** Uses `PrepImageForClipVision` (`crop_position: pad`) so full-frame portraits load cleanly into `ip-adapter-plus_sdxl_vit-h` without center-cropping.
    * **Full-Frame Facial Conditioning (`PuLID-Flux`):** Replaces square-cropped CLIP Vision adapters with `pulid_flux_v0.9.1.safetensors` + `InsightFace (antelopev2)` + `EVA02-CLIP` (`weight: 0.75–0.85`, `end_at: 0.750`). Accepts full-frame reference portraits without center-cropping while preserving natural skin pores.
    * **Single-Pass Facial Refinement (`FaceDetailer`):** Uses `FaceDetailer` directly as the FLUX KSampler (`YOLOv8` + `SAM ViT-H` at `1024x1024`, `20 steps`, `CFG: 1.0`, `euler` / `normal`, `denoise: 0.30`), cutting total generation time to **~34 seconds total for both Pony + FLUX renders** on an RTX 4090.
 
@@ -47,10 +48,10 @@ Instead of maintaining separate graphs per task, this workflow organizes **22 mo
 
 * **`workflows/reactor_face_model_builder.json`:** Batch-processes up to 12 reference portraits (8 active by default) through `Make Image Batch` and `Build Blended Face Model` (`compute_method: Mean`, `save_mode: ON`) to export reusable `.safetensors` facial models in seconds.
 * **`workflows/wan22_flf2v_video_generator.json`:** Generates **15-second videos in ~10 minutes** on an RTX 4090 using dual **Wan 2.2 I2V 14B High/Low Lighting FP8** models with SageAttention.
-  * *Customizations:* Adapted from a community Civitai Wan 2.2 First-Last-Frame base workflow—modified to add **IP-Adapter conditioning**, remove the mandatory end-frame lock (supporting single-frame I2V or FLF2V), and include an instant **orientation switch (`1200x840` ↔ `840x1200`)**.
+  * *Customizations:* Adapted from a community Wan 2.2 First-Last-Frame base workflow—enhanced with an **SD3.5-adapted IP-Adapter** for stronger face/body consistency and denoising, optional end-frame unlock, and an instant **orientation switch (`1200x840` ↔ `840x1200`)**.
 
 ---
 
 ## Required Custom Nodes
 Ensure the following node packs are installed via **ComfyUI-Manager**:
-`rgthree-comfy` · `ComfyUI-Impact-Pack` · `ComfyUI-ReActor` · `ComfyUI_IPAdapter_plus` · `comfyui_controlnet_aux` · `ComfyUI-Florence2` · `ComfyUI-WD14-Tagger` · `ComfyUI-VideoHelperSuite` · `ComfyUI-KJNodes`
+`rgthree-comfy` · `ComfyUI-Impact-Pack` · `ComfyUI-ReActor` · `ComfyUI_IPAdapter_plus` · `comfyui_controlnet_aux` · `ComfyUI-Florence2` · `ComfyUI-WD14-Tagger` · `ComfyUI-VideoHelperSuite` · `ComfyUI-KJNodes` · `ComfyUI_PuLID_Flux_ll` · `IPAdapterWAN`
